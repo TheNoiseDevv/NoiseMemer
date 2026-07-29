@@ -1,0 +1,44 @@
+name: Meme Bot
+
+on:
+  schedule:
+    # Memes are costlier (image generation), so default is every 4 hours.
+    # Edit this to taste. https://crontab.guru helps.
+    - cron: "0 */4 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  meme:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Make a meme
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: ${{ secrets.OPENAI_MODEL }}
+          OPENAI_IMAGE_MODEL: "gpt-image-1"        # change to "dall-e-3" if you get a verification error
+          COIN_NAME: "The Loudest Coin"
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_SECRET: ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_SECRET: ${{ secrets.X_ACCESS_SECRET }}
+          # Separate from the professor's DRY_RUN so you can test them independently.
+          MEME_DRY_RUN: ${{ secrets.MEME_DRY_RUN }}
+        run: python meme_bot.py
+
+      # Lets you SEE the generated meme in dry-run mode without posting it.
+      - name: Upload meme preview
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meme-preview
+          path: meme.png
+          if-no-files-found: ignore
